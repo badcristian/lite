@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MailerLiteTube</title>
+<style>
+:root{
+  --bg:#fff;--fg:#0f0f0f;--fg2:#606060;--chip:#f2f2f2;--chipfg:#0f0f0f;
+  --hover:#f2f2f2;--line:#e5e5e5;--field:#fff;--fieldline:#ccc;--shadow:rgba(0,0,0,.1);
+  --btn:#f2f2f2;--btnfg:#0f0f0f;--sub:#0f0f0f;--subfg:#fff;--brand:#f03;
+  --skel:#e9e9e9;
+}
+:root[data-theme="dark"]{
+  --bg:#0f0f0f;--fg:#f1f1f1;--fg2:#aaa;--chip:#272727;--chipfg:#f1f1f1;
+  --hover:#272727;--line:#303030;--field:#121212;--fieldline:#303030;
+  --shadow:rgba(0,0,0,.5);--btn:#272727;--btnfg:#f1f1f1;--sub:#f1f1f1;--subfg:#0f0f0f;
+  --brand:#f03;--skel:#272727;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--fg);overflow:hidden;
+  font-family:Roboto,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;font-size:14px;
+  -webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+::-webkit-scrollbar{width:9px}
+::-webkit-scrollbar-thumb{background:var(--fieldline);border-radius:9px}
+
+/* ---------- top bar ---------- */
+.top{height:56px;display:flex;align-items:center;gap:8px;padding:0 16px;
+  position:sticky;top:0;background:var(--bg);z-index:20}
+.icon{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+  flex:0 0 auto}
+.icon:hover{background:var(--hover)}
+.icon svg{width:24px;height:24px;fill:currentColor}
+.brand{display:flex;align-items:center;gap:5px;margin-right:12px;cursor:pointer;
+  flex:0 0 auto}
+.brand .mark{width:29px;height:20px;border-radius:5px;background:var(--brand);
+  display:grid;place-items:center}
+.brand .mark::after{content:"";border-left:8px solid #fff;border-top:5px solid transparent;
+  border-bottom:5px solid transparent;margin-left:2px}
+.brand .word{font-size:19px;font-weight:700;letter-spacing:-.5px}
+.brand sup{font-size:9px;color:var(--fg2);font-weight:400}
+
+.searchwrap{flex:1 1 auto;display:flex;justify-content:center;gap:8px;min-width:0}
+.search{display:flex;max-width:560px;flex:1 1 auto;min-width:0}
+.search input{flex:1 1 auto;min-width:0;height:40px;padding:0 16px;font:inherit;
+  border:1px solid var(--fieldline);border-right:0;border-radius:20px 0 0 20px;
+  background:var(--field);color:var(--fg);outline:none}
+.search input:focus{border-color:#065fd4}
+.search button{width:64px;border:1px solid var(--fieldline);border-left:0;
+  border-radius:0 20px 20px 0;background:var(--chip);display:grid;place-items:center}
+.search button svg{width:22px;height:22px;fill:currentColor}
+.mic{width:40px;height:40px;border-radius:50%;background:var(--chip);
+  display:grid;place-items:center;flex:0 0 auto}
+.mic:hover{background:var(--hover)}
+.mic svg{width:20px;height:20px;fill:currentColor}
+
+.right{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.create{display:flex;align-items:center;gap:7px;height:36px;padding:0 14px;
+  border-radius:18px;background:var(--chip);font-size:14px;font-weight:500}
+.create:hover{background:var(--hover)}
+.create svg{width:19px;height:19px;fill:currentColor}
+.bell{position:relative}
+.bell .n{position:absolute;top:3px;right:2px;background:var(--brand);color:#fff;
+  font-size:10px;line-height:1;padding:2px 4px;border-radius:8px;font-weight:500}
+.me{width:32px;height:32px;border-radius:50%;background:#0BD97F;color:#06120B;
+  display:grid;place-items:center;font-weight:700;font-size:14px;flex:0 0 auto;
+  cursor:pointer}
+
+/* ---------- shell ---------- */
+.shell{height:calc(100% - 56px);display:grid;grid-template-columns:240px 1fr;
+  overflow:hidden}
+/* Single column, not "0 1fr". Hiding .side with display:none removes it from
+   the grid, so .main becomes the first item and would land in the 0 track
+   while the 1fr track sat empty — a zero-width page that still reports no
+   overflow. */
+.shell.mini{grid-template-columns:1fr}
+.side{overflow-y:auto;padding:0 12px 24px;border-right:0}
+.shell.mini .side{display:none}
+.snav{display:flex;align-items:center;gap:24px;height:40px;padding:0 12px;
+  border-radius:10px;width:100%;text-align:left;font-size:14px}
+.snav:hover{background:var(--hover)}
+.snav[aria-current="true"]{background:var(--hover);font-weight:500}
+.snav svg{width:23px;height:23px;fill:currentColor;flex:0 0 auto}
+.snav .av{width:24px;height:24px;border-radius:50%;flex:0 0 auto;display:grid;
+  place-items:center;color:#fff;font-size:11px;font-weight:700}
+.snav .dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:#065fd4}
+.sgroup{border-top:1px solid var(--line);padding:12px 0;margin-top:6px}
+.sgroup:first-child{border-top:0;margin-top:0}
+.stitle{display:flex;align-items:center;gap:6px;padding:6px 12px;font-size:16px;
+  font-weight:500}
+.stitle svg{width:16px;height:16px;fill:currentColor}
+
+.main{overflow-y:auto;padding:0 24px 40px}
+
+/* ---------- chips ---------- */
+.chips{position:sticky;top:0;background:var(--bg);display:flex;gap:12px;
+  padding:12px 0;overflow-x:auto;scrollbar-width:none;z-index:10}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;height:32px;padding:0 12px;border-radius:8px;background:var(--chip);
+  font-size:14px;font-weight:500;white-space:nowrap}
+.chip[aria-pressed="true"]{background:var(--sub);color:var(--subfg)}
+
+/* ---------- grid ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:16px 16px;padding-top:8px}
+.card{text-align:left;display:block;width:100%}
+.thumb{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;
+  background:var(--skel);display:grid;place-items:center}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb .ph{width:100%;height:100%;display:grid;place-items:center;gap:6px;
+  align-content:center;text-align:center;padding:14px;
+  background:linear-gradient(135deg,#111827,#1f2937)}
+.thumb .ph b{color:#0BD97F;font-size:28px;font-weight:800;letter-spacing:-.02em}
+.thumb .ph span{color:#9aa5b2;font-size:11px}
+.thumb .len{position:absolute;right:6px;bottom:6px;background:#000c;color:#fff;
+  font-size:12px;font-weight:500;padding:1px 4px;border-radius:4px;z-index:3}
+/* Two preview layers. The flipbook of storyboard frames covers the player
+   while YouTube's title card and centre button are still showing — those take
+   over 5s to fade and the centre one cannot be cropped away. Once they are
+   gone the real video crossfades in underneath.
+   pointer-events:none on both is load-bearing: without it the overlay
+   swallows the click that opens the video. */
+.thumb .prev{position:absolute;inset:0;width:100%;height:100%;border:0;
+  background:#000;pointer-events:none;z-index:1;opacity:0;transition:opacity .45s}
+.thumb .prev.on{opacity:1}
+.thumb .flip{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  pointer-events:none;z-index:2;transition:opacity .45s}
+.thumb .flip.off{opacity:0}
+.cardbody{display:grid;grid-template-columns:36px 1fr;gap:12px;padding:12px 0 0}
+.cav{width:36px;height:36px;border-radius:50%;background:#0BD97F;color:#06120B;
+  display:grid;place-items:center;font-weight:700}
+.card h3{margin:0 0 4px;font-size:16px;line-height:1.4;font-weight:500;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card .meta{color:var(--fg2);font-size:14px;line-height:1.5}
+
+/* ---------- watch ---------- */
+.watch{display:grid;grid-template-columns:minmax(0,1fr) 402px;gap:24px;padding-top:24px}
+.player{width:100%;aspect-ratio:16/9;background:#000;border-radius:12px;overflow:hidden}
+.player iframe{width:100%;height:100%;border:0;display:block}
+.player .ph{width:100%;height:100%;display:grid;place-content:center;gap:10px;
+  text-align:center;padding:24px;background:linear-gradient(135deg,#111827,#1f2937)}
+.player .ph b{color:#0BD97F;font-size:17px}
+.player .ph span{color:#9aa5b2;font-size:13px;max-width:46ch;line-height:1.6}
+.wtitle{font-size:20px;font-weight:700;line-height:1.4;margin:12px 0 0}
+.owner{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}
+.owner .cav{width:40px;height:40px}
+.oname{font-size:16px;font-weight:500;line-height:1.3}
+.osub{color:var(--fg2);font-size:12px}
+.subscribe{height:36px;padding:0 16px;border-radius:18px;background:var(--sub);
+  color:var(--subfg);font-weight:500}
+.acts{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.act{height:36px;padding:0 14px;border-radius:18px;background:var(--btn);
+  color:var(--btnfg);font-weight:500;display:flex;align-items:center;gap:7px}
+.act:hover{filter:brightness(.94)}
+.act svg{width:19px;height:19px;fill:currentColor}
+.act .sep{width:1px;height:22px;background:var(--fieldline);margin:0 2px}
+.desc{background:var(--chip);border-radius:12px;padding:12px;font-size:14px;
+  line-height:1.5;white-space:pre-wrap}
+.desc .dm{font-weight:500;margin-bottom:6px}
+.cmts{margin-top:24px}
+.cmthead{display:flex;align-items:center;gap:24px;font-size:20px;font-weight:700;
+  margin-bottom:20px}
+.cmtbox{display:grid;grid-template-columns:40px 1fr;gap:14px;align-items:center}
+.cmtbox .cav{width:40px;height:40px}
+.cmtbox input{width:100%;height:34px;background:transparent;border:0;
+  border-bottom:1px solid var(--fieldline);color:var(--fg);font:inherit;outline:none}
+.cmt{display:grid;grid-template-columns:40px 1fr;gap:14px;margin-top:22px}
+.cmt .cav{width:40px;height:40px}
+.pin{display:inline-block;font-size:12px;color:var(--fg2);margin-bottom:4px}
+.cmt .who{font-size:13px;font-weight:500;margin-bottom:3px}
+.cmt .who span{color:var(--fg2);font-weight:400;margin-left:6px}
+.cmt .body{font-size:14px;line-height:1.5;white-space:pre-wrap}
+
+.rail{display:flex;flex-direction:column;gap:8px}
+.rcard{display:grid;grid-template-columns:168px 1fr;gap:8px;text-align:left;
+  border-radius:10px;padding:2px}
+.rcard:hover{background:var(--hover)}
+.rcard .thumb{border-radius:8px}
+.rcard h4{margin:0 0 4px;font-size:14px;line-height:1.35;font-weight:500;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rcard .meta{color:var(--fg2);font-size:12px;line-height:1.5}
+
+/* Narrow: the rail becomes a drawer over the content, the way YouTube does it.
+   Without this the hamburger has nothing to toggle and reads as broken. */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:25;opacity:0;
+  pointer-events:none;transition:opacity .2s}
+.scrim.on{opacity:1;pointer-events:auto}
+
+@media(max-width:1100px){
+  .watch{grid-template-columns:1fr}
+  .shell{grid-template-columns:1fr}
+  .side{display:none}
+  .shell.drawer .side{display:block;position:fixed;top:56px;left:0;bottom:0;
+    width:240px;padding-top:8px;background:var(--bg);z-index:30;
+    box-shadow:0 0 24px var(--shadow)}
+}
+@media(min-width:1101px){.scrim{display:none}}
+@media(max-width:760px){
+  .top{padding:0 8px;gap:4px}
+  .main{padding:0 12px 32px}
+  .searchwrap .mic,.create span,.brand sup,.bell{display:none}
+  .brand{margin-right:4px}
+  .brand .word{font-size:16px}
+  .grid{grid-template-columns:1fr}
+  .acts{margin-left:0}
+}
+/* Below this the bar cannot hold both a wordmark and a search field, so the
+   field goes — same call YouTube makes, for the same reason. */
+@media(max-width:560px){
+  .searchwrap,.create{display:none}
+  .rcard{grid-template-columns:148px 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <button class="icon" id="burger" title="Menu"><svg viewBox="0 0 24 24"><path d="M21 6H3V5h18v1zm0 5H3v1h18v-1zm0 6H3v1h18v-1z"/></svg></button>
+  <div class="brand" id="home-link">
+    <span class="mark"></span><span class="word">MailerLiteTube</span><sup>PHP</sup>
+  </div>
+
+  <div class="searchwrap">
+    <form class="search" id="searchform">
+      <input id="q" placeholder="Search" aria-label="Search">
+      <button type="submit" title="Search"><svg viewBox="0 0 24 24"><path d="M20.87 20.17l-5.59-5.59C16.35 13.35 17 11.75 17 10c0-3.87-3.13-7-7-7s-7 3.13-7 7 3.13 7 7 7c1.75 0 3.35-.65 4.58-1.71l5.59 5.59.7-.71zM10 16c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg></button>
+    </form>
+    <button class="mic" title="Search with your voice"><svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg></button>
+  </div>
+
+  <div class="right">
+    <button class="create"><svg viewBox="0 0 24 24"><path d="M14 13h-3v3H9.5v-3h-3v-1.5h3v-3H11v3h3V13zm3-7H3v12h14v-6.39l4 1.83V8.56l-4 1.83V6m1-1v3.83L22 7v8l-4-1.83V19H2V5h16z"/></svg><span>Create</span></button>
+    <button class="icon bell" title="Notifications"><svg viewBox="0 0 24 24"><path d="M10 20h4c0 1.1-.9 2-2 2s-2-.9-2-2zm10-2.65V19H4v-1.65l2-1.88v-5.15C6 7.4 7.56 5.1 10 4.34v-.38c0-1.42 1.49-2.5 2.99-1.85C13.64 2.39 14 3.09 14 3.83v.51c2.44.75 4 3.06 4 5.98v5.15l2 1.88zm-1 .43l-2-1.88v-5.47c0-2.47-1.19-4.36-3.13-5.1-1.26-.53-2.64-.5-3.84.03C8.15 6.11 7 7.99 7 10.43v5.47l-2 1.88V18h14v-.22z"/></svg><span class="n">9+</span></button>
+    <button class="icon" id="theme" title="Toggle theme"></button>
+    <div class="me" id="me">C</div>
+  </div>
+</div>
+
+<div class="shell" id="shell">
+  <nav class="side" id="side"></nav>
+  <main class="main" id="main"></main>
+</div>
+<div class="scrim" id="scrim"></div>
+
+<!-- ===================== EDIT YOUR VIDEOS HERE =====================
+     "id" is the YouTube video ID — the part after ?v= in the URL.
+     Unlisted videos work; they do not need to be public.
+     Leave "id" empty and the card shows a clearly-marked placeholder
+     rather than a dead player.                                        -->
+<script type="application/json" id="data">
+{
+  "channel": { "name": "Cristian", "handle": "@badcristian", "initial": "C" },
+  "videos": [
+    {
+      "id": "csGRBbg2WyM",
+      "title": "Why working for MailerLite",
+      "len": "0:36",
+      "when": "Jul 29, 2026",
+      "tag": "MailerLite",
+      "desc": "The video the posting asks for, well under the three-minute limit."
+    },
+    {
+      "id": "Ov0THIInGes",
+      "title": "How did I scale an existing system safely",
+      "len": "2:49",
+      "when": "Jul 29, 2026",
+      "tag": "Scaling",
+      "desc": "Question 1 — a technical challenge that needed a scalable solution inside an existing, mature codebase: the performance work, and the tech debt and breakage risk weighed against it."
+    },
+    {
+      "id": "_UA6RHAdvpc",
+      "title": "What did I build from scratch",
+      "len": "1:54",
+      "when": "Jul 29, 2026",
+      "tag": "From scratch",
+      "desc": "Question 2 — a framework, library or tool I wrote myself instead of reaching for one that already existed, and the reasoning behind that call."
+    },
+    {
+      "id": "8DADbRKAbVs",
+      "title": "How would I rate my experience",
+      "len": "2:34",
+      "when": "Jul 29, 2026",
+      "tag": "Skills",
+      "desc": "Question 3 — PHP, JavaScript, SQL, Redis and queues, CSS, other languages, ElasticSearch and PHP frameworks, each with a number from 1 to 5 and the experience behind it."
+    },
+    {
+      "id": "lvmR1lPzZ_k",
+      "title": "Something that sparks joy",
+      "len": "0:38",
+      "when": "Jul 29, 2026",
+      "tag": "Joy",
+      "desc": "Question 4 — the free-form one."
+    }
+  ]
+}
+</script>
+
+<script type="module">
+const DATA = JSON.parse(document.getElementById('data').textContent);
+const { channel: CH, videos: VIDEOS } = DATA;
+const $ = id => document.getElementById(id);
+const main = $('main'), side = $('side'), shell = $('shell');
+
+/* ---------- theme: light default, remembered ---------- */
+const SUN = '<svg viewBox="0 0 24 24"><path d="M12 18a6 6 0 1 1 0-12 6 6 0 0 1 0 12zm0-1.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zM11.25 1h1.5v3.5h-1.5V1zm0 18.5h1.5V23h-1.5v-3.5zM23 11.25v1.5h-3.5v-1.5H23zM4.5 11.25v1.5H1v-1.5h3.5zM19.8 3.14l1.06 1.06-2.47 2.48-1.07-1.07 2.48-2.47zM5.68 17.26l1.07 1.07-2.48 2.47-1.06-1.06 2.47-2.48zm13.06 3.54l-2.48-2.47 1.07-1.07 2.47 2.48-1.06 1.06zM6.75 5.61L4.27 3.14 3.21 4.2l2.47 2.48 1.07-1.07z"/></svg>';
+const MOON = '<svg viewBox="0 0 24 24"><path d="M12.3 22C6.62 22 2 17.38 2 11.7c0-4.29 2.64-8.11 6.62-9.62l1.2-.45-.13 1.28a8.2 8.2 0 0 0 11.4 8.42l1.19-.5-.15 1.29A10.32 10.32 0 0 1 12.3 22zM8.14 3.93A9.05 9.05 0 0 0 3.25 11.7 9.06 9.06 0 0 0 20.8 14.4 9.45 9.45 0 0 1 8.14 3.93z"/></svg>';
+const setTheme = t => {
+  document.documentElement.dataset.theme = t;
+  $('theme').innerHTML = t === 'dark' ? SUN : MOON;
+  try { localStorage.setItem('mlt-theme', t); } catch {}
+};
+let saved = 'light';
+try { saved = localStorage.getItem('mlt-theme') || 'light'; } catch {}
+setTheme(saved === 'dark' ? 'dark' : 'light');
+$('theme').addEventListener('click', () =>
+  setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+/* ---------- sidebar ---------- */
+const I = {
+  home:'M4 10.2 12 3l8 7.2V21h-6v-6h-4v6H4V10.2z',
+  shorts:'M10 14.65v-5.3L15 12l-5 2.65zm7.77-4.33-1.2-.5.86-.46c1.2-.65 1.65-2.15 1-3.35a2.47 2.47 0 0 0-3.35-1L4.5 10.55A2.47 2.47 0 0 0 3.64 14l.02.02c.4.73 1.1 1.2 1.9 1.32l1.2.5-.87.46a2.46 2.46 0 0 0-1 3.34 2.47 2.47 0 0 0 3.35 1l10.58-5.54a2.47 2.47 0 0 0 .87-3.44 2.5 2.5 0 0 0-1.92-1.33z',
+  subs:'M20 8H4V6h16v2zm-2-6H6v2h12V2zm4 10v8c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2v-8c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2zm-6 4-6-3.27v6.53L16 16z',
+  you:'M12 4a4 4 0 1 1 0 8 4 4 0 0 1 0-8zm0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z',
+  history:'M13 3a9 9 0 0 0-9 9H1l4 4 4-4H6a7 7 0 1 1 2.05 4.95l-1.42 1.42A9 9 0 1 0 13 3zm-1 5v5l4.25 2.52.75-1.23-3.5-2.08V8H12z',
+  // Rings, not discs: an outer circle alone fills solid, so each needs the
+  // inner counter-arc to punch the middle back out.
+  play:'M10 8.64v6.72L15.27 12 10 8.64zM12 3c4.96 0 9 4.04 9 9s-4.04 9-9 9-9-4.04-9-9 4.04-9 9-9m0-1C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z',
+  clock:'M14.97 16.95 10 13.87V7h2v5.76l4.03 2.49-1.06 1.7zM12 3c-4.96 0-9 4.04-9 9s4.04 9 9 9 9-4.04 9-9-4.04-9-9-9m0-1c5.52 0 10 4.48 10 10s-4.48 10-10 10S2 17.52 2 12 6.48 2 12 2z',
+  like:'M18.77 11h-4.23l1.52-4.94A1.54 1.54 0 0 0 14.59 4c-.36 0-.71.15-.96.41L7 11H4v10h13.43a2 2 0 0 0 1.98-1.7l1.4-9a2 2 0 0 0-2.04-2.3z',
+  list:'M22 7H2v1h20V7zm-9 5H2v1h11v-1zm0 5H2v1h11v-1zm2-2.5v6l5-3-5-3z',
+  music:'M12 4v9.17A4 4 0 1 0 14 17V8h5V4h-7z',
+  game:'M10 12H8v2H6v-2H4v-2h2V8h2v2h2v2zm5 1a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm3 2a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM17 5H7a5 5 0 0 0 0 10h10a5 5 0 0 0 0-10z',
+  trophy:'M19 5h-2V3H7v2H5a2 2 0 0 0-2 2v2a4 4 0 0 0 4 4 5 5 0 0 0 4 3v2H8v2h8v-2h-3v-2a5 5 0 0 0 4-3 4 4 0 0 0 4-4V7a2 2 0 0 0-2-2z',
+};
+const svg = d => `<svg viewBox="0 0 24 24"><path d="${d}"/></svg>`;
+const CHANNELS = [
+  ['Query Plan', '#e64a19'], ['The Refactor', '#1e88e5'], ['Latency', '#8e24aa'],
+  ['Cache Invalidation', '#00897b'], ['Off By One', '#f9a825'], ['Stack Trace', '#5e35b1'],
+];
+function nav(icon, label, opts = {}) {
+  const b = document.createElement('button');
+  b.className = 'snav';
+  b.innerHTML = (opts.av
+      ? `<span class="av" style="background:${opts.av}">${label[0]}</span>`
+      : svg(icon))
+    + `<span>${label}</span>` + (opts.dot ? '<span class="dot"></span>' : '');
+  if (opts.current) b.setAttribute('aria-current', 'true');
+  b.addEventListener('click', () => { closeDrawer(); (opts.on || (() => go('home')))(); });
+  return b;
+}
+function group(title, items) {
+  const g = document.createElement('div');
+  g.className = 'sgroup';
+  if (title) {
+    const t = document.createElement('div');
+    t.className = 'stitle';
+    t.innerHTML = `${title}<svg viewBox="0 0 24 24"><path d="M9.4 6 8 7.4l4.6 4.6L8 16.6 9.4 18l6-6z"/></svg>`;
+    g.append(t);
+  }
+  items.forEach(i => g.append(i));
+  return g;
+}
+function buildSide(view) {
+  side.replaceChildren(
+    group('', [
+      nav(I.home, 'Home', { current: view === 'home', on: () => go('home') }),
+      nav(I.shorts, 'Shorts'),
+      nav(I.subs, 'Subscriptions'),
+    ]),
+    group('Subscriptions',
+      CHANNELS.map(([n, c], i) => nav('', n, { av: c, dot: i < 3 }))),
+    group('You', [
+      nav(I.you, 'Your channel'), nav(I.history, 'History'),
+      nav(I.list, 'Playlists'), nav(I.clock, 'Watch later'),
+      nav(I.like, 'Liked videos'), nav(I.play, 'Your videos'),
+    ]),
+    group('Explore', [
+      nav(I.music, 'Music'), nav(I.game, 'Gaming'), nav(I.trophy, 'Sports'),
+    ]),
+  );
+}
+/* Wide: the rail collapses in place. Narrow: it slides over as a drawer. */
+const scrim = $('scrim');
+const narrow = () => matchMedia('(max-width:1100px)').matches;
+const closeDrawer = () => {
+  shell.classList.remove('drawer');
+  scrim.classList.remove('on');
+};
+$('burger').addEventListener('click', () => {
+  if (!narrow()) { shell.classList.toggle('mini'); return; }
+  const open = shell.classList.toggle('drawer');
+  scrim.classList.toggle('on', open);
+});
+scrim.addEventListener('click', closeDrawer);
+addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+// Leaving the drawer open behind a route change strands the scrim over content.
+addEventListener('resize', () => { if (!narrow()) closeDrawer(); });
+
+/* ---------- pieces ---------- */
+// maxresdefault is true 16:9. hqdefault is 4:3 and letterboxes a widescreen
+// video with black bars, so it is only the fallback for the odd upload that
+// never got a maxres frame generated.
+const thumb = (v, n) => v.id
+  ? `<img loading="lazy" alt="" src="https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/maxresdefault.jpg"
+       onerror="this.onerror=null;this.src='https://i.ytimg.com/vi/${encodeURIComponent(v.id)}/hqdefault.jpg'">`
+  : `<div class="ph"><b>0${n + 1}</b><span>no video attached yet</span></div>`;
+
+// "1 view" is true, and truer than any number I could put here.
+const views = () => '1 view';
+
+/* Hover preview. Two stages, because the obvious single-stage version shows
+   YouTube's title card, channel avatar and centre pause button for the first
+   five seconds — measured, not assumed — and the centre one sits too near the
+   middle to crop out.
+     400ms   flipbook of YouTube's own storyboard frames (25/50/75% through
+             the video, ~13KB each). Motion immediately, no player chrome.
+     1200ms  muted player starts loading underneath, invisible.
+     5200ms  its chrome has faded, so crossfade to the real video.
+   Skipped on touch, where there is no hover. */
+const CAN_HOVER = matchMedia('(hover: hover) and (pointer: fine)').matches;
+const FLIP_AT = 400, FRAME_AT = 1200, REVEAL_AT = 5200, FLIP_EVERY = 700;
+
+function preview(thumb, v) {
+  if (!CAN_HOVER || !v.id) return;
+  const id = encodeURIComponent(v.id);
+  const frames = ['hq1', 'hq2', 'hq3'].map(n => `https://i.ytimg.com/vi/${id}/${n}.jpg`);
+  const timers = [];
+  let flip = null, frame = null, cycle = null;
+
+  const stop = () => {
+    timers.splice(0).forEach(clearTimeout);
+    clearInterval(cycle); cycle = null;
+    flip?.remove(); flip = null;
+    frame?.remove(); frame = null;
+  };
+
+  thumb.addEventListener('mouseenter', () => {
+    stop();
+    frames.forEach(src => { new Image().src = src; });   // warm the cache
+
+    timers.push(setTimeout(() => {
+      let n = 0;
+      flip = document.createElement('img');
+      flip.className = 'flip';
+      flip.alt = '';
+      flip.src = frames[0];
+      thumb.append(flip);
+      cycle = setInterval(() => {
+        n = (n + 1) % frames.length;
+        if (flip) flip.src = frames[n];
+      }, FLIP_EVERY);
+    }, FLIP_AT));
+
+    timers.push(setTimeout(() => {
+      frame = document.createElement('iframe');
+      frame.className = 'prev';
+      frame.tabIndex = -1;
+      frame.setAttribute('aria-hidden', 'true');
+      frame.allow = 'autoplay; encrypted-media';
+      frame.src = `https://www.youtube-nocookie.com/embed/${id}`
+        + '?autoplay=1&mute=1&controls=0&disablekb=1&modestbranding=1'
+        + '&playsinline=1&rel=0&start=3';
+      thumb.append(frame);
+    }, FRAME_AT));
+
+    timers.push(setTimeout(() => {
+      if (!frame) return;
+      frame.classList.add('on');
+      flip?.classList.add('off');
+      clearInterval(cycle); cycle = null;
+    }, REVEAL_AT));
+  });
+
+  thumb.addEventListener('mouseleave', stop);
+}
+
+function card(v, i) {
+  const b = document.createElement('button');
+  b.className = 'card';
+  b.innerHTML = `
+    <div class="thumb">${thumb(v, i)}<span class="len">${v.len}</span></div>
+    <div class="cardbody">
+      <span class="cav">${CH.initial}</span>
+      <div><h3></h3><div class="meta"></div></div>
+    </div>`;
+  b.querySelector('h3').textContent = v.title;
+  b.querySelector('.meta').innerHTML =
+    `${CH.name}<br>${views()} · ${v.when}`;
+  preview(b.querySelector('.thumb'), v);
+  b.addEventListener('click', () => go('watch', i, true));
+  return b;
+}
+
+// Derived from the videos, so a chip can never filter down to an empty grid.
+const CHIPS = ['All', ...new Set(VIDEOS.map(v => v.tag).filter(Boolean))];
+let chip = 'All', query = '';
+
+function home() {
+  shell.classList.remove('mini');   // rail comes back on the grid
+  buildSide('home');
+  const wrap = document.createElement('div');
+
+  const chips = document.createElement('div');
+  chips.className = 'chips';
+  CHIPS.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = c;
+    b.setAttribute('aria-pressed', String(c === chip));
+    b.addEventListener('click', () => { chip = c; render(); });
+    chips.append(b);
+  });
+
+  const grid = document.createElement('div');
+  grid.className = 'grid';
+  const q = query.trim().toLowerCase();
+  const shown = VIDEOS
+    .map((v, i) => [v, i])
+    .filter(([v]) => (chip === 'All' || v.tag === chip)
+      && (!q || (v.title + ' ' + v.desc).toLowerCase().includes(q)));
+
+  if (!shown.length) {
+    const e = document.createElement('div');
+    e.style.cssText = 'padding:48px 0;color:var(--fg2)';
+    e.textContent = 'No videos match that.';
+    grid.append(e);
+  }
+  shown.forEach(([v, i]) => grid.append(card(v, i)));
+
+  wrap.append(chips, grid);
+  main.replaceChildren(wrap);
+  main.scrollTop = 0;
+}
+
+function watch(i, autoplay = false) {
+  // Collapse the rail on entering a video, the way YouTube does — the player
+  // picks up the full 240px immediately instead of after a second click.
+  shell.classList.add('mini');
+  buildSide('watch');
+  const v = VIDEOS[i];
+  const wrap = document.createElement('div');
+  wrap.className = 'watch';
+
+  // autoplay only when a click brought us here. On first load — including a
+  // ?v= deep link — sound nobody asked for is hostile, and this page is
+  // embedded in someone else's, which makes it worse.
+  const left = document.createElement('div');
+  left.innerHTML = `
+    <div class="player">${v.id
+      ? `<iframe src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.id)}?rel=0&playsinline=1${autoplay ? '&autoplay=1' : ''}"
+                allow="autoplay; accelerometer; clipboard-write; encrypted-media; picture-in-picture"
+                allowfullscreen title=""></iframe>`
+      : `<div class="ph"><b>no video attached yet</b>
+           <span>Add the YouTube ID to this entry in the JSON block near the bottom
+           of watch/index.html and it plays right here.</span></div>`}</div>
+    <h1 class="wtitle"></h1>
+    <div class="owner">
+      <span class="cav">${CH.initial}</span>
+      <div><div class="oname">${CH.name}</div><div class="osub">${CH.handle}</div></div>
+      <button class="subscribe">Subscribe</button>
+      <div class="acts">
+        <button class="act">${svg(I.like)} 1<span class="sep"></span>
+          <svg viewBox="0 0 24 24" style="transform:rotate(180deg)"><path d="${I.like}"/></svg></button>
+        <button class="act">Share</button>
+        <button class="act">Save</button>
+      </div>
+    </div>
+    <div class="desc"><div class="dm">${views()} · ${v.when}</div><span></span></div>
+    <div class="cmts">
+      <div class="cmthead">1 Comment</div>
+      <div class="cmtbox"><span class="cav">${CH.initial}</span>
+        <input placeholder="Add a comment…"></div>
+      <div class="cmt">
+        <span class="cav">${CH.initial}</span>
+        <div>
+          <span class="pin">📌 Pinned by ${CH.name}</span>
+          <div class="who">${CH.name} <span>${v.when}</span></div>
+          <div class="body">Yes, this whole player is hand-built — one HTML file, no framework, no build step. The videos are real; the interface around them is a deliberate knock-off, written from scratch because a CV felt like the boring option.</div>
+        </div>
+      </div>
+    </div>`;
+  left.querySelector('.wtitle').textContent = v.title;
+  left.querySelector('.desc span').textContent = v.desc;
+
+  const rail = document.createElement('div');
+  rail.className = 'rail';
+  VIDEOS.forEach((o, n) => {
+    if (n === i) return;
+    const b = document.createElement('button');
+    b.className = 'rcard';
+    b.innerHTML = `
+      <div class="thumb">${thumb(o, n)}<span class="len">${o.len}</span></div>
+      <div><h4></h4><div class="meta">${CH.name}<br>${views()} · ${o.when}</div></div>`;
+    b.querySelector('h4').textContent = o.title;
+    preview(b.querySelector('.thumb'), o);
+    b.addEventListener('click', () => go('watch', n, true));
+    rail.append(b);
+  });
+
+  wrap.append(left, rail);
+  main.replaceChildren(wrap);
+  main.scrollTop = 0;
+}
+
+/* ---------- routing: ?v=2 deep-links one video ---------- */
+function go(view, i = 0, autoplay = false) {
+  closeDrawer();
+  if (view === 'watch') {
+    history.replaceState(null, '', `?v=${i + 1}`);
+    watch(i, autoplay);
+  } else {
+    history.replaceState(null, '', location.pathname);
+    home();
+  }
+}
+function render() {
+  const n = parseInt(new URLSearchParams(location.search).get('v'), 10);
+  if (Number.isInteger(n) && n >= 1 && n <= VIDEOS.length) watch(n - 1);
+  else home();
+}
+
+$('home-link').addEventListener('click', () => go('home'));
+$('searchform').addEventListener('submit', e => {
+  e.preventDefault();
+  query = $('q').value;
+  go('home');
+});
+
+render();
+</script>
+</body>
+</html>
